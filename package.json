@@ -1,0 +1,36 @@
+{
+  "name": "@skseth/scaffolder",
+  "version": "v0.1.1",
+  "description": "scaffolder based on jinja2 like templates",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "tsc",
+    "build:check": "tsc --noEmit",
+    "test": "cd test && mocha --require ts-node/register --watch-extensions ts,tsx \"**/*.{ts,tsx}\"",
+    "prepublish": "npm run clean && npm run build && node build/SetupPackage.js && cd dist && npm pack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skseth/scaffolder.git"
+  },
+  "author": "Samir K Seth",
+  "license": "MIT",
+  "dependencies": {
+    "joi": "^17.4.0",
+    "nunjucks": "^3.2.3",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.17",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^15.0.1",
+    "@types/nunjucks": "^3.1.4",
+    "chai": "^4.3.4",
+    "mocha": "^8.3.2",
+    "rimraf": "^3.0.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  }
+}
