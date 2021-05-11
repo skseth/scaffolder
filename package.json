@@ -1,6 +1,6 @@
 {
   "name": "@skseth/scaffolder",
-  "version": "v0.1.1",
+  "version": "v0.1.2",
   "description": "scaffolder based on jinja2 like templates",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -9,7 +9,9 @@
     "build": "tsc",
     "build:check": "tsc --noEmit",
     "test": "cd test && mocha --require ts-node/register --watch-extensions ts,tsx \"**/*.{ts,tsx}\"",
-    "prepublish": "npm run clean && npm run build && node build/SetupPackage.js && cd dist && npm pack"
+    "prepublish": "npm run clean && npm run build && node build/SetupPackage.js && cd dist && npm pack",
+    "publish": "cd dist && npm publish --access public",
+    "lint": "tsc --noEmit && eslint . --ext js,ts,json --quiet --fix"
   },
   "repository": {
     "type": "git",
@@ -18,8 +20,10 @@
   "author": "Samir K Seth",
   "license": "MIT",
   "dependencies": {
+    "nunjucks": "^3.2.3"
+  },
+  "peerDependencies": {
     "joi": "^17.4.0",
-    "nunjucks": "^3.2.3",
     "toml": "^3.0.0"
   },
   "devDependencies": {
@@ -27,8 +31,14 @@
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.0.1",
     "@types/nunjucks": "^3.1.4",
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
     "chai": "^4.3.4",
+    "eslint": "^7.26.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
     "mocha": "^8.3.2",
+    "prettier": "^2.3.0",
+    "prettier-eslint": "^12.0.0",
     "rimraf": "^3.0.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.4"

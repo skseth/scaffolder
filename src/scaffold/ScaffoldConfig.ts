@@ -1,5 +1,4 @@
 import toml from 'toml'
-import { GitPatternList } from '../gitdir'
 import Joi from 'joi'
 
 const schema = Joi.object({
@@ -17,40 +16,51 @@ const schema = Joi.object({
 })
 
 export interface ProcessConfig {
-    name: string,
-    comment: string,
-    include: string[]
+  name: string
+  comment: string
+  include: string[]
+}
+
+interface InputConfig {
+  ignore?: string[]
+  process?: ProcessConfig[]
+  variables?: Record<string, unknown>
+  options?: Record<string, unknown>
 }
 
 export class ScaffoldConfig {
-    ignore: string[]
-    copy: string[]
-    process: ProcessConfig[]
-    variables: any
-    options: any
-    
-    constructor(content: string) {
-        const tomlcontents = this.readConfig(content)
-        this.ignore = tomlcontents?.ignore || []
-        this.copy = tomlcontents?.copy || []
-        this.process = tomlcontents?.process || []
-        this.variables = tomlcontents?.variables || {}
-        this.options = tomlcontents?.options || {}
-    }
+  ignore: string[]
+  process: ProcessConfig[]
+  variables: Record<string, unknown>
+  options: Record<string, unknown>
 
-    private readConfig(content: string): any {
-        let obj
-        try {
-            obj = toml.parse(content);
-        } catch (e) {
-            console.error("ScaffoldConfig: Parsing error on line " + e.line + ", column " + e.column +
-                ": " + e.message);
-            throw e
-        }
-        const { error } = schema.validate(obj)
-        if (error) {
-            throw error
-        }
-        return obj
+  constructor(content: string) {
+    const tomlcontents = this.readConfig(content)
+    this.ignore = tomlcontents?.ignore || []
+    this.process = tomlcontents?.process || []
+    this.variables = tomlcontents?.variables || {}
+    this.options = tomlcontents?.options || {}
+  }
+
+  private readConfig(content: string): InputConfig {
+    let obj: InputConfig = {}
+    try {
+      obj = toml.parse(content)
+    } catch (e) {
+      console.error(
+        'ScaffoldConfig: Parsing error on line ' +
+          e.line +
+          ', column ' +
+          e.column +
+          ': ' +
+          e.message
+      )
+      throw e
     }
+    const { error } = schema.validate(obj)
+    if (error) {
+      throw error
+    }
+    return obj
+  }
 }

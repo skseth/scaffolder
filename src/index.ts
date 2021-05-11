@@ -1,1 +1,2 @@
-export { ScaffoldProcess } from './scaffold/scaffold'
+export { ScaffoldProcess, ScaffoldProcessGeneric } from './scaffold/scaffold'
+export { GitDir, GitPatternList } from './gitdir'

@@ -1,43 +1,38 @@
 import fs from 'fs'
-import { isBoolean } from 'node:util'
 import path from 'path'
 
 export enum PreParserResult {
-    COMMENT,
-    BLANK,
-    PATTERN
+  COMMENT,
+  BLANK,
+  PATTERN
 }
 
-const slash = "\\"
+const slash = '\\'
 
 // PE - PathElement
 export enum MatchTokenTypes {
-    ZeroOrMorePE,
-    SinglePE
+  ZeroOrMorePE,
+  SinglePE
 }
 
 export type MatchZeroOrMorePEs = {
   tokenType: MatchTokenTypes.ZeroOrMorePE
-
 }
 export type MatchSinglePE = {
   tokenType: MatchTokenTypes.SinglePE
   pattern: string
 }
 
-export type MatchTokens =
-  | MatchZeroOrMorePEs
-  | MatchSinglePE
-
+export type MatchTokens = MatchZeroOrMorePEs | MatchSinglePE
 
 export interface MatchEntry {
-    originalPattern: string
-    parsedPattern: string
-    entryType: PreParserResult
-    isNegation: boolean
-    isDirectoryMatch: boolean
-    isFullMatch: boolean
-    tokens: MatchTokens[]
+  originalPattern: string
+  parsedPattern: string
+  entryType: PreParserResult
+  isNegation: boolean
+  isDirectoryMatch: boolean
+  isFullMatch: boolean
+  tokens: MatchTokens[]
 }
 
 export function isMatchZeroOrMorePEsToken(
@@ -61,85 +56,83 @@ handling negation (!), full match and directory match options.
 */
 
 export function preparser(instr: string): MatchEntry {
-    // lines starting with # - comment
-    const entry: MatchEntry = {
-        originalPattern: instr,
-        parsedPattern: instr,
-        entryType: PreParserResult.PATTERN,
-        isNegation: false,
-        isDirectoryMatch: false,
-        isFullMatch: false,
-        tokens: []
-    }
+  // lines starting with # - comment
+  const entry: MatchEntry = {
+    originalPattern: instr,
+    parsedPattern: instr,
+    entryType: PreParserResult.PATTERN,
+    isNegation: false,
+    isDirectoryMatch: false,
+    isFullMatch: false,
+    tokens: []
+  }
 
-    if (/^\s*$/.test(entry.parsedPattern)) {
-      entry.entryType = PreParserResult.BLANK;
-      return entry;
-    }
-
-    if (entry.parsedPattern.startsWith("#")) {
-      entry.entryType = PreParserResult.COMMENT;
-      return entry;
-    }
-
-    entry.entryType = PreParserResult.PATTERN
-
-    if (entry.parsedPattern.startsWith(`!`)) {
-      entry.parsedPattern = entry.parsedPattern.slice(1);
-      entry.isNegation = true;
-    } else if (entry.parsedPattern.startsWith(`${slash}#`)) {
-      entry.parsedPattern = entry.parsedPattern.slice(1);
-    }
-
-    // whitespace at the end is trimmed
-    const end_ws_match = /^(.*?)(\\(\s)\s*|\s+)$/
-    const ws_match = end_ws_match.exec(entry.parsedPattern)
-    if (ws_match) {
-        //ws_match[1] is the non whitespaced string
-        //ws_match[3] is the (possibly) escaped whitespace
-        entry.parsedPattern = `${ws_match[1]}${ws_match[3]? ws_match[3]: ''}`;
-    }
-
-    if (entry.parsedPattern.endsWith('/')) {
-        entry.parsedPattern = entry.parsedPattern.slice(0,-1)
-        entry.isDirectoryMatch = true
-    } 
-
-    if (entry.parsedPattern.includes('/')) {
-      entry.isFullMatch = true;
-    }
-
-    if (entry.parsedPattern.startsWith('/')) {
-        entry.parsedPattern = entry.parsedPattern.slice(1)
-    }
-
+  if (/^\s*$/.test(entry.parsedPattern)) {
+    entry.entryType = PreParserResult.BLANK
     return entry
+  }
+
+  if (entry.parsedPattern.startsWith('#')) {
+    entry.entryType = PreParserResult.COMMENT
+    return entry
+  }
+
+  entry.entryType = PreParserResult.PATTERN
+
+  if (entry.parsedPattern.startsWith(`!`)) {
+    entry.parsedPattern = entry.parsedPattern.slice(1)
+    entry.isNegation = true
+  } else if (entry.parsedPattern.startsWith(`${slash}#`)) {
+    entry.parsedPattern = entry.parsedPattern.slice(1)
+  }
+
+  // whitespace at the end is trimmed
+  const end_ws_match = /^(.*?)(\\(\s)\s*|\s+)$/
+  const ws_match = end_ws_match.exec(entry.parsedPattern)
+  if (ws_match) {
+    //ws_match[1] is the non whitespaced string
+    //ws_match[3] is the (possibly) escaped whitespace
+    entry.parsedPattern = `${ws_match[1]}${ws_match[3] ? ws_match[3] : ''}`
+  }
+
+  if (entry.parsedPattern.endsWith('/')) {
+    entry.parsedPattern = entry.parsedPattern.slice(0, -1)
+    entry.isDirectoryMatch = true
+  }
+
+  if (entry.parsedPattern.includes('/')) {
+    entry.isFullMatch = true
+  }
+
+  if (entry.parsedPattern.startsWith('/')) {
+    entry.parsedPattern = entry.parsedPattern.slice(1)
+  }
+
+  return entry
 }
 
-export function tokenizeEntry(instr: string) : MatchEntry {
-    const entry = preparser(instr)
-    if (entry.entryType === PreParserResult.PATTERN) {
-        const tokens = entry.parsedPattern.split("/")
-        const lastIndex = tokens.length - 1
-        entry.tokens = tokens.map((pattern, index) => {
-            if (pattern === "**") {
-                return { 
-                    tokenType: MatchTokenTypes.ZeroOrMorePE
-                }
-            } else {
-                return {tokenType: MatchTokenTypes.SinglePE, pattern}
-            }
-        })
-    }
+export function tokenizeEntry(instr: string): MatchEntry {
+  const entry = preparser(instr)
+  if (entry.entryType === PreParserResult.PATTERN) {
+    const tokens = entry.parsedPattern.split('/')
+    entry.tokens = tokens.map((pattern) => {
+      if (pattern === '**') {
+        return {
+          tokenType: MatchTokenTypes.ZeroOrMorePE
+        }
+      } else {
+        return { tokenType: MatchTokenTypes.SinglePE, pattern }
+      }
+    })
+  }
 
-    return entry
+  return entry
 }
 
 // Iterative algorithm from : http://dogankurt.com/wildcard.html
-export function fnmatch_noseq(pat: string, str: string)
-{
-  let lens = str.length
-  let lenp = pat.length
+export function fnmatch_noseq(pat: string, str: string): boolean {
+  const lens = str.length
+  const lenp = pat.length
   let curp = 0
   let curs = 0
 
@@ -183,21 +176,25 @@ export function fnmatch_noseq(pat: string, str: string)
 // matches pattern against a path broken up into an array
 // based on fnmatch algo above, with adjustments for paths
 // ignores negation
-export function path_matcher(entry: MatchEntry, src: string[], isFile: boolean = false): boolean {
+export function path_matcher(
+  entry: MatchEntry,
+  src: string[],
+  isFile = false
+): boolean {
   //console.log(`path_matcher ${entry.originalPattern} ${src} ${isFile}`)
   // handle the non-full match case (always a single directory or filename)
-  let pat = entry.tokens
-  let lens = isFile && entry.isDirectoryMatch ? src.length - 1 : src.length
-  let lenp = pat.length
+  const pat = entry.tokens
+  const lens = isFile && entry.isDirectoryMatch ? src.length - 1 : src.length
+  const lenp = pat.length
   let curp = 0
   let curs = 0
 
   if (!entry.isFullMatch) {
     // a non-full match can match any part of the path
-    for (var i = 0; i < lens; i++) {
-        if (fnmatch_noseq(entry.parsedPattern, src[i])) {
+    for (let i = 0; i < lens; i++) {
+      if (fnmatch_noseq(entry.parsedPattern, src[i])) {
         return true
-        }
+      }
     }
     return false
   }
@@ -242,56 +239,63 @@ export function path_matcher(entry: MatchEntry, src: string[], isFile: boolean =
     curs++
   }
 
-// Git pattern matching : abc/ matches abc, but abc/** does not match abc, but only files under abc, such as abc/x
-// So, unlike fnmatch, we should not skip remaining globstar patterns 
+  // Git pattern matching : abc/ matches abc, but abc/** does not match abc, but only files under abc, such as abc/x
+  // So, unlike fnmatch, we should not skip remaining globstar patterns
 
-  return curp === lenp 
+  return curp === lenp
 }
 
 export function parsePatternList(patternStr: string): MatchEntry[] {
-    return patternStr.split('\n').map((p) => tokenizeEntry(p))
+  return patternStr.split('\n').map((p) => tokenizeEntry(p))
 }
 
-export function matchPatternList(entries: MatchEntry[], pathToMatch: string, isFile: boolean, isMatched: boolean = false) {
+export function matchPatternList(
+  entries: MatchEntry[],
+  pathToMatch: string,
+  isFile: boolean,
+  isMatched = false
+): boolean {
+  const pathElements = pathToMatch.split('/')
+  let matched = isMatched
 
-    let pathElements = pathToMatch.split('/')
-    let matched = isMatched
-
-    for (const entry of entries) {
-      if (entry.entryType === PreParserResult.BLANK || entry.entryType === PreParserResult.COMMENT) {
-          continue
-      }
-
-      // a directory match cannot be negated - so we need to always run even if already matched
-      // and exit immediately
-      if (entry.isDirectoryMatch && !entry.isNegation) {
-        if (path_matcher(entry, pathElements, isFile)) {
-            return true
-        }
-      } 
-      // a negation is only run if matched, and on success results in reversing the match
-      else if (matched && entry.isNegation) {
-        if (path_matcher(entry, pathElements, isFile)) {
-          matched = false
-        }
-      }
-      // all other patterns run only if not matched
-      else if (!matched && !entry.isNegation) {
-        matched = path_matcher(entry, pathElements, isFile)
-      }
+  for (const entry of entries) {
+    if (
+      entry.entryType === PreParserResult.BLANK ||
+      entry.entryType === PreParserResult.COMMENT
+    ) {
+      continue
     }
 
-    return matched
+    // a directory match cannot be negated - so we need to always run even if already matched
+    // and exit immediately
+    if (entry.isDirectoryMatch && !entry.isNegation) {
+      if (path_matcher(entry, pathElements, isFile)) {
+        return true
+      }
+    }
+    // a negation is only run if matched, and on success results in reversing the match
+    else if (matched && entry.isNegation) {
+      if (path_matcher(entry, pathElements, isFile)) {
+        matched = false
+      }
+    }
+    // all other patterns run only if not matched
+    else if (!matched && !entry.isNegation) {
+      matched = path_matcher(entry, pathElements, isFile)
+    }
+  }
+
+  return matched
 }
 
 export class GitPatternList {
   private entries: MatchEntry[]
 
   constructor(patternArray: string[]) {
-      this.entries = patternArray.map((e) => tokenizeEntry(e))
+    this.entries = patternArray.map((e) => tokenizeEntry(e))
   }
 
-  matches(str: string) {
+  matches(str: string): boolean {
     return matchPatternList(this.entries, str, false)
   }
 }
@@ -303,25 +307,25 @@ export class GitDir {
   parent?: GitDir
 
   private constructor(dirpath: string, entries: MatchEntry[], parent?: GitDir) {
-    this.fullPath = parent? path.join(parent.FullPath(), dirpath) : dirpath
-    this.dirpath = parent? dirpath : ''
+    this.fullPath = parent ? path.join(parent.FullPath(), dirpath) : dirpath
+    this.dirpath = parent ? dirpath : ''
     this.parent = parent
     this.entries = entries
   }
 
-  FullPath() {
-      return this.fullPath
+  FullPath(): string {
+    return this.fullPath
   }
 
   // If no parent, dirpath must be a path to directory
   // else dirpath should be relative to parent
-  static async New(dirpath: string, parent?: GitDir) {
+  static async New(dirpath: string, parent?: GitDir): Promise<GitDir> {
     const newGitDir = new GitDir(dirpath, [], parent)
     let gitignore = ''
     try {
-      const gitignore = await fs.promises.readFile(
-        path.join(newGitDir.FullPath(), '.gitignore')
-      )
+      gitignore = await fs.promises
+        .readFile(path.join(newGitDir.FullPath(), '.gitignore'))
+        .then((b) => b.toString())
     } catch (e) {
       // no gitignore found. TODO : Check for NOENT or something
       if (parent) {
@@ -340,38 +344,38 @@ export class GitDir {
   matches(pathToMatch: string, isFile: boolean): boolean {
     let isMatched = false
     if (this.parent) {
-      isMatched = this.parent.matches(path.join(this.dirpath, pathToMatch), isFile)
+      isMatched = this.parent.matches(
+        path.join(this.dirpath, pathToMatch),
+        isFile
+      )
     }
 
     if (this.entries) {
-         return matchPatternList(
-            this.entries,
-            pathToMatch,
-            isFile,
-            isMatched
-        )
+      return matchPatternList(this.entries, pathToMatch, isFile, isMatched)
     }
 
     return isMatched
   }
 
-  async *walk(relPath: string = ''): AsyncIterableIterator<string> {
+  async *walk(relPath = ''): AsyncIterableIterator<string> {
     //console.log(`walk ${relPath} in ${this.FullPath()}`)
     if (relPath !== '') {
-        const gitDir = await GitDir.New(relPath, this)
-        if (gitDir !== this) {
-            yield *gitDir.walk()
-            return 
-        }
+      const gitDir = await GitDir.New(relPath, this)
+      if (gitDir !== this) {
+        yield* gitDir.walk()
+        return
+      }
     }
 
-    for await (const direntry of await fs.promises.opendir(path.join(this.FullPath(), relPath))) {
+    for await (const direntry of await fs.promises.opendir(
+      path.join(this.FullPath(), relPath)
+    )) {
       const childPath = path.join(relPath, direntry.name)
       if (!this.matches(childPath, direntry.isFile())) {
         if (direntry.isDirectory()) {
-            yield* this.walk(childPath)
+          yield* this.walk(childPath)
         } else {
-           yield path.join(this.dirpath, childPath)
+          yield path.join(this.dirpath, childPath)
         }
       }
     }
