@@ -11,8 +11,7 @@ const schema = Joi.object({
       include: Joi.array().items(Joi.string()).min(1)
     })
   ),
-  variables: Joi.object().pattern(/\w+/, Joi.any()),
-  options: Joi.object().pattern(/\w+/, Joi.any())
+  variables: Joi.object().pattern(/\w+/, Joi.any())
 })
 
 export interface ProcessConfig {
@@ -25,21 +24,18 @@ interface InputConfig {
   ignore?: string[]
   process?: ProcessConfig[]
   variables?: Record<string, unknown>
-  options?: Record<string, unknown>
 }
 
 export class ScaffoldConfig {
   ignore: string[]
   process: ProcessConfig[]
   variables: Record<string, unknown>
-  options: Record<string, unknown>
 
   constructor(content: string) {
     const tomlcontents = this.readConfig(content)
     this.ignore = tomlcontents?.ignore || []
     this.process = tomlcontents?.process || []
     this.variables = tomlcontents?.variables || {}
-    this.options = tomlcontents?.options || {}
   }
 
   private readConfig(content: string): InputConfig {

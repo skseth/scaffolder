@@ -174,12 +174,7 @@ export async function ScaffoldProcessGeneric(
   const config = new ScaffoldConfig(await reader('scaffold.toml'))
 
   const fileactionIter = scaffoldAction(config, srcIter)
-  const context = Object.assign(
-    {},
-    config.variables,
-    config.options,
-    targetContext
-  )
+  const context = Object.assign({}, config.variables, targetContext)
 
   for await (const fileaction of fileactionIter) {
     if (fileaction.action === 'ignore') {

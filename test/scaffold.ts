@@ -31,7 +31,6 @@ describe('scaffold config', function () {
     const config = new ScaffoldConfig('')
     expect(config.ignore).to.have.all.members([])
     expect(config.process).to.have.all.members([])
-    expect(config.options).to.eql({})
     expect(config.variables).to.eql({})
   })
 
@@ -48,11 +47,6 @@ describe('scaffold config', function () {
     expect(config.process[0].name).to.equal('test')
     expect(config.process[0].comment).to.equal('**')
     expect(config.process[0].include).to.have.all.members(['abc', 'def'])
-  })
-
-  it('initializes options', function () {
-    const config = new ScaffoldConfig('[options]\nopt1 = "opt1"\nopt2 = "opt2"')
-    expect(config.options).to.eql({ opt1: 'opt1', opt2: 'opt2' })
   })
 
   it('initializes variables', function () {
