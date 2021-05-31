@@ -44,7 +44,6 @@ class ScaffoldExtension implements nunjucks.Extension {
     // get the tag token
     const tok = parser.nextToken()
     const expArguments = cArguments(tok.value)
-    const endBlockName = endBlock(tok.value)
 
     // parse the args and move after the block end. passing true
     // as the second arg is required if there are no parentheses
@@ -59,9 +58,15 @@ class ScaffoldExtension implements nunjucks.Extension {
 
     // parse the body
     let body = ''
+    const endBlockName = endBlock(tok.value)
     if (endBlockName !== null) {
       body = parser.parseUntilBlocks(endBlockName)
-      parser.advanceAfterBlockEnd()
+
+      try {
+        parser.advanceAfterBlockEnd()
+      } catch (e) {
+        throw `Error in finding end tag ${endBlockName} - ${e.message}`
+      }
     }
 
     // See above for notes about CallExtension
@@ -152,14 +157,7 @@ export function scaffoldProcessFile(
   if (comment) {
     content = content.replace(new RegExp(`^${comment}\\s+{`, 'mg'), '{')
   }
-  try {
-    return env.renderString(content, context)
-  } catch (e) {
-    console.log(`ERROR rendering template`)
-    console.log(`${content}`)
-    console.log(e)
-    return ''
-  }
+  return env.renderString(content, context)
 }
 
 type writeFileFunc = (filename: string, content: string) => Promise<void>
@@ -187,14 +185,18 @@ export async function ScaffoldProcessGeneric(
     let targetFilePath = fileaction.filepath
     const targetFileDir = path.dirname(targetFilePath)
     if (fileaction.action === 'process') {
-      content = scaffoldProcessFile(
-        fileaction.comment,
-        context,
-        content,
-        (renamedFileName) => {
-          targetFilePath = path.join(targetFileDir, renamedFileName)
-        }
-      )
+      try {
+        content = scaffoldProcessFile(
+          fileaction.comment,
+          context,
+          content,
+          (renamedFileName) => {
+            targetFilePath = path.join(targetFileDir, renamedFileName)
+          }
+        )
+      } catch (e) {
+        throw `ERROR processing file ${fileaction.filepath}: ${e.message}`
+      }
     }
 
     await writer(targetFilePath, content)

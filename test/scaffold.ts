@@ -105,3 +105,30 @@ def`
     })
   })
 })
+
+describe.only('scaffold process errors', function () {
+  ;[
+    {
+      name: 'missing end tag',
+      comment: '##',
+      content: `Hello, World
+## {% uncommentif option_vault -%}
+## abc
+## def
+`,
+      context: { option_vault: false },
+      e: `Hello, World
+## abc
+## def`
+    }
+  ].forEach((t) => {
+    it(`${t.name} should raise error`, () => {
+      const throwtest = () =>
+        scaffoldProcessFile(t.comment, t.context, t.content, () => {
+          /* empty function */
+        })
+
+      expect(throwtest).to.throw(/enduncommentif - unexpected end of file/)
+    })
+  })
+})
