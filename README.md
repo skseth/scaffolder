@@ -54,7 +54,7 @@ In particular, don't actually use templating variables within your code. That de
 
 ## scaffold.toml
 
-The library expects the src project to contain a file called scaffold.toml. 
+The library expects the root of the scaffolded project to contain a file called scaffold.toml. 
 
 It has 3 sections :
 
@@ -96,8 +96,8 @@ include = [
 ]
 
 [variables]
-  service_prefix = "payment"
-
+service_prefix = "payment"
+option_vault = true
 ```
 
 ## Scaffolding - Standalone
