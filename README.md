@@ -196,3 +196,93 @@ module.exports = class extends Generator {
 };
 
 ```
+
+# API
+
+## Scaffold API
+
+The publicly exposed API are as follows :
+
+#### ScaffoldProcess
+
+Provide a source directory, a target directory, and a set of variables in targetContext. The process converts files as defined in the 'scaffold.toml' in the source root. 
+
+Useful when you have a physical filesystem.
+
+Note that the process respects .gitignore files - any files listed in .gitignore are not copied.
+
+```typescript
+async function ScaffoldProcess(
+  srcDir: string,
+  targetDir: string,
+  targetContext: Record<string, unknown> = {}
+)
+```
+
+#### ScaffoldProcessGeneric
+
+What happens if you don't have a "real" file system? Perhaps you are reading a github repo over the web. In Yeoman, the output goes to a memfs file system. You may not want to skip .gitignore files.
+
+If so, use ScaffoldProcessGeneric. Of course, ScaffoldProcess uses ScaffoldProcessGeneric under the hood.
+
+```typescript
+async function ScaffoldProcessGeneric(
+  srcIter: AsyncIterableIterator<string>,
+  reader: readFileFunc,
+  writer: writeFileFunc,
+  targetContext: Record<string, unknown> = {}
+)
+
+type writeFileFunc = (filename: string, content: string) => Promise<void>
+type readFileFunc = (filename: string) => Promise<string>
+```
+
+You have to provide a filename iterator, and a read and write function. 
+
+## GitDir API
+
+Note: This API may be pulled out into a separate package in future
+
+#### GitDir
+
+GitDir lets you "walk" a git repository for files, ignoring gitignored files. It supports all gitignore rules described in the [gitignore documentation](https://git-scm.com/docs/gitignore). It also handles nested .gitignore files.
+
+The one rule I am aware of which it violates is that files in the git index will be ignored - the gitignore command does not ignore such files. This pattern is used occasionally to *stop* a certain file in the repo from changing. 
+
+```typescript
+class GitDir {
+  static async New(dirpath: string, parent?: GitDir): Promise<GitDir> {...}
+  async *walk(relPath = ''): AsyncIterableIterator<string> {...}
+}
+
+// Use it this way 
+const gitDir = await scaffold.GitDir.New("./scaffolder")
+await scaffold.ScaffoldProcessGeneric(gitDir.walk(), reader, writer, this.answers)  
+```
+
+But ... why not just use one of existing packages which do so? Unfortunately I tried a few and they were riddled with bugs (For ex. "\*.js" ignoring "\*.json"), or the gitignore code was part of a much bigger library.
+
+Ultimately, I was forced to write this.
+
+#### GitPatternList
+
+As a bonus, GitPatternList can help you build your own gitignore pattern matching solutions.
+
+```typescript
+class GitPatternList {
+  constructor(patternArray: string[])
+  matches(str: string): boolean 
+}
+
+// Use it this way
+
+const pattern = new GitPatternList([
+  "/docs/",
+  "out/",
+  "go.sum"
+])
+
+pattern.matches("abc/docs/hello") // returns false
+pattern.matches("docs/hello") // returns true
+pattern.matches("abc/out/hello") // returns true
+```
